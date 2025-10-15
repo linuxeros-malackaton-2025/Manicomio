@@ -1,0 +1,46 @@
+<button id="themeToggle" class="theme-toggle">☀️ Tema claro</button>
+
+<style>
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.theme-toggle:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+</style>
+
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", () => {
+    const body = document.documentElement;
+    const btn = document.getElementById("themeToggle");
+    if (!btn) return; // seguridad extra
+
+    // Cargar tema guardado o por defecto
+    const saved = localStorage.getItem("malackaton_theme") || "dark";
+    body.dataset.theme = saved;
+    updateLabel();
+
+    // Cambiar tema al hacer clic
+    btn.addEventListener("click", () => {
+      const newTheme = body.dataset.theme === "dark" ? "light" : "dark";
+      body.dataset.theme = newTheme;
+      localStorage.setItem("malackaton_theme", newTheme);
+      updateLabel();
+    });
+
+    // Actualiza el texto del botón
+    function updateLabel() {
+      btn.textContent =
+        body.dataset.theme === "dark" ? "☀️ Tema claro" : "🌙 Tema oscuro";
+    }
+  });
+</script>

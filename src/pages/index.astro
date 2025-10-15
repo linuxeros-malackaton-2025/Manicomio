@@ -1,11 +1,14 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import BaseLayout from "../layouts/BaseLayout.astro";
+import QueryInput from "../components/QueryInput.astro";
+import SqlEditor from "../components/SqlEditor.astro";
+import DataTable from "../components/DataTable.astro";
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<BaseLayout>
+  <div class="card">
+    <QueryInput />
+    <SqlEditor />
+    <DataTable />
+  </div>
+</BaseLayout>

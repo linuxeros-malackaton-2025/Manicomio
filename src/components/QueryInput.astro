@@ -1,0 +1,90 @@
+---
+/*
+  Componente QueryInput.astro
+  - Campo de texto para consultas en lenguaje natural → SQL
+  - Dispara evento 'sql-generated' cuando se genera SQL
+*/
+---
+
+<div class="panel">
+  <label>Consulta en lenguaje natural</label>
+  <input id="nl" type="text" placeholder="Ej: Muéstrame ventas con precio > 100" />
+  <div class="buttons">
+    <button id="convertBtn">Convertir (LLM mock)</button>
+    <button id="clearBtn" class="secondary">Limpiar</button>
+  </div>
+</div>
+
+<style>
+.panel { 
+  padding: 1rem; 
+  background: var(--card); 
+  border-radius: 10px; 
+}
+
+label { 
+  display: block; 
+  font-size: 13px; 
+  color: var(--muted); 
+  margin-bottom: 8px; 
+}
+
+input { 
+  width: 100%; 
+  padding: 10px; 
+  border-radius: 8px; 
+  border: 1px solid rgba(255,255,255,0.1); 
+  background: transparent; 
+  color: inherit; 
+}
+
+.buttons { 
+  margin-top: 10px; 
+  display: flex; 
+  gap: 8px; 
+}
+
+button { 
+  background: var(--accent); 
+  border: 0; 
+  border-radius: 8px; 
+  padding: 8px 12px; 
+  color: white; 
+  cursor: pointer; 
+}
+
+button.secondary { 
+  background: transparent; 
+  border: 1px solid var(--muted); 
+  color: var(--muted); 
+}
+</style>
+
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", () => {
+    const nlInput = document.getElementById('nl');
+    const convertBtn = document.getElementById('convertBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    if (!nlInput || !convertBtn || !clearBtn) return;
+
+    // Convertir lenguaje natural a SQL (mock)
+    convertBtn.addEventListener('click', () => {
+      const nl = nlInput.value.trim();
+      if (!nl) return;
+      
+      // Mock: generar SQL simple basado en palabras clave
+      const sql = nl.includes('ventas') 
+        ? 'SELECT * FROM ventas WHERE precio > 100;' 
+        : 'SELECT * FROM tabla;';
+      
+      // Disparar evento con el SQL generado
+      window.dispatchEvent(new CustomEvent('sql-generated', { detail: sql }));
+    });
+
+    // Limpiar input
+    clearBtn.addEventListener('click', () => {
+      nlInput.value = '';
+    });
+  });
+</script>

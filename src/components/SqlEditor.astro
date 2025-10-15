@@ -1,0 +1,117 @@
+---
+/*
+  Componente QueryInput.astro
+  - Campo de texto para consultas en lenguaje natural → SQL
+  - Dispara evento 'sql-generated' cuando se genera SQL
+*/
+---
+
+<div class="sql-editor-panel">
+  <label for="sqlArea">SQL (editable)</label>
+  <textarea id="sqlArea" placeholder="Escribe aquí tu consulta SQL..."></textarea>
+  <div class="buttons">
+    <button id="runBtn">Ejecutar SQL</button>
+    <button id="clearBtn" class="secondary">Limpiar</button>
+  </div>
+  <pre class="sql-highlight"><code id="sqlHighlight" class="language-sql"></code></pre>
+</div>
+
+<style>
+.sql-editor-panel {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.buttons {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: var(--accent);
+  color: white;
+  font-size: 0.9rem;
+}
+
+button.secondary {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+}
+
+pre.sql-highlight {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg-alt);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+</style>
+
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", () => {
+    const sqlArea = document.getElementById('sqlArea');
+    const runBtn = document.getElementById('runBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const sqlHighlight = document.getElementById('sqlHighlight');
+
+    if (!sqlArea || !runBtn || !clearBtn || !sqlHighlight) return;
+
+    // Función para actualizar resaltado
+    function updateHighlight() {
+      sqlHighlight.textContent = sqlArea.value;
+      if (window.Prism) window.Prism.highlightElement(sqlHighlight);
+    }
+
+    // Input en textarea actualiza resaltado
+    sqlArea.addEventListener('input', updateHighlight);
+
+    // Ejecutar SQL: dispara evento al resto de la app
+    runBtn.addEventListener('click', () => {
+      const sql = sqlArea.value.trim();
+      if (!sql) return;
+      window.dispatchEvent(new CustomEvent('sql-run', { detail: { sql } }));
+    });
+
+    // Limpiar textarea
+    clearBtn.addEventListener('click', () => {
+      sqlArea.value = '';
+      updateHighlight();
+    });
+
+    // Inicializar resaltado si ya hay contenido
+    updateHighlight();
+
+    // Escuchar generación de SQL por IA (desde QueryInput)
+    window.addEventListener('sql-generated', (e) => {
+      sqlArea.value = e.detail;
+      updateHighlight();
+    });
+  });
+</script>
