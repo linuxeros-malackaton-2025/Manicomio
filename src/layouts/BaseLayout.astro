@@ -1,0 +1,25 @@
+---
+import "../styles/global.css";
+import ThemeToggle from "../components/ThemeToggle.astro";
+---
+
+<html lang="es" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Malackaton — Explorador de datos</title>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="logo">M</div>
+      <div>
+        <h1>Malackaton — Explorador de datos</h1>
+        <p>Interfaz para visualizar, estudiar e interactuar con datos mediante IA</p>
+      </div>
+      <ThemeToggle />
+    </header>
+    <main>
+      <slot /> <!-- aquí se renderiza la página -->
+    </main>
+  </body>
+</html>

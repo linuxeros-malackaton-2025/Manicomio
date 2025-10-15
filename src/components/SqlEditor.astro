@@ -1,0 +1,116 @@
+---
+/*
+  Componente SqlEditor.astro
+  - Permite editar SQL y ejecutar consultas.
+  - Dispara un evento 'sql-run' con el SQL al frontend.
+*/
+---
+
+<div class="sql-editor-panel">
+  <label for="sqlArea">SQL (editable)</label>
+  <textarea id="sqlArea" placeholder="Escribe aquí tu consulta SQL..."></textarea>
+  <div class="buttons">
+    <button id="runBtn">Ejecutar SQL</button>
+    <button id="clearBtn" class="secondary">Limpiar</button>
+  </div>
+  <pre class="sql-highlight"><code id="sqlHighlight" class="language-sql"></code></pre>
+</div>
+
+<style>
+.sql-editor-panel {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.buttons {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: var(--accent);
+  color: white;
+  font-size: 0.9rem;
+}
+
+button.secondary {
+  background: transparent;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+}
+
+pre.sql-highlight {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg-alt);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+</style>
+
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", () => {
+    const sqlArea = document.getElementById('sqlArea');
+    const runBtn = document.getElementById('runBtn');
+
+    if (!sqlArea || !runBtn) return;
+
+    // Ejecutar SQL en Oracle
+    runBtn.addEventListener('click', async () => {
+      const sql = sqlArea.value.trim();
+      if (!sql) return;
+
+      try {
+        // 🔥 Llamada al endpoint
+        const response = await fetch('/api/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Error en la consulta');
+        }
+
+        // Disparar evento con los resultados
+        window.dispatchEvent(new CustomEvent('sql-results', { 
+          detail: { 
+            rows: result.rows,
+            sql: sql 
+          } 
+        }));
+
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+      }
+    });
+  });
+</script>
