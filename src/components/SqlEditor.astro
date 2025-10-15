@@ -1,8 +1,8 @@
 ---
 /*
-  Componente SqlEditor.astro
-  - Permite editar SQL y ejecutar consultas.
-  - Dispara un evento 'sql-run' con el SQL al frontend.
+  Componente QueryInput.astro
+  - Campo de texto para consultas en lenguaje natural → SQL
+  - Dispara evento 'sql-generated' cuando se genera SQL
 */
 ---
 
@@ -78,39 +78,40 @@ pre.sql-highlight {
   document.addEventListener("DOMContentLoaded", () => {
     const sqlArea = document.getElementById('sqlArea');
     const runBtn = document.getElementById('runBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const sqlHighlight = document.getElementById('sqlHighlight');
 
-    if (!sqlArea || !runBtn) return;
+    if (!sqlArea || !runBtn || !clearBtn || !sqlHighlight) return;
 
-    // Ejecutar SQL en Oracle
-    runBtn.addEventListener('click', async () => {
+    // Función para actualizar resaltado
+    function updateHighlight() {
+      sqlHighlight.textContent = sqlArea.value;
+      if (window.Prism) window.Prism.highlightElement(sqlHighlight);
+    }
+
+    // Input en textarea actualiza resaltado
+    sqlArea.addEventListener('input', updateHighlight);
+
+    // Ejecutar SQL: dispara evento al resto de la app
+    runBtn.addEventListener('click', () => {
       const sql = sqlArea.value.trim();
       if (!sql) return;
+      window.dispatchEvent(new CustomEvent('sql-run', { detail: { sql } }));
+    });
 
-      try {
-        // 🔥 Llamada al endpoint
-        const response = await fetch('/api/query', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sql })
-        });
+    // Limpiar textarea
+    clearBtn.addEventListener('click', () => {
+      sqlArea.value = '';
+      updateHighlight();
+    });
 
-        const result = await response.json();
+    // Inicializar resaltado si ya hay contenido
+    updateHighlight();
 
-        if (!response.ok) {
-          throw new Error(result.error || 'Error en la consulta');
-        }
-
-        // Disparar evento con los resultados
-        window.dispatchEvent(new CustomEvent('sql-results', { 
-          detail: { 
-            rows: result.rows,
-            sql: sql 
-          } 
-        }));
-
-      } catch (err) {
-        alert('❌ Error: ' + err.message);
-      }
+    // Escuchar generación de SQL por IA (desde QueryInput)
+    window.addEventListener('sql-generated', (e) => {
+      sqlArea.value = e.detail;
+      updateHighlight();
     });
   });
 </script>
