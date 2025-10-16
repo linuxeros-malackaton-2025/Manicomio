@@ -1,0 +1,371 @@
+---
+/*
+  Componente ChartsPanel.astro
+  - Muestra gráficos interactivos generados a partir de los datos
+  - Se activa con botón "Ver Gráficos"
+  - Usa Chart.js para visualización
+*/
+---
+
+<div id="chartsContainer" style="display: none;">
+  <button id="viewChartsBtn" class="charts-btn">
+    📊 Ver Gráficos
+  </button>
+</div>
+
+<div id="chartsPanel" class="charts-panel" style="display: none;">
+  <div class="charts-header">
+    <h3>📊 Visualizaciones de Datos</h3>
+    <button id="closeCharts" class="close-btn">✕</button>
+  </div>
+  
+  <div id="chartsContent" class="charts-content">
+    <div class="loading">Generando gráficos...</div>
+  </div>
+</div>
+
+<style>
+#chartsContainer {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.charts-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.charts-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.charts-btn:active {
+  transform: translateY(0);
+}
+
+.charts-panel {
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+  border: 2px solid #667eea;
+}
+
+.charts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.charts-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.3rem;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--bg-alt);
+  color: var(--text);
+}
+
+.charts-content {
+  color: var(--text);
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.chart-card {
+  background: var(--bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.chart-description {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.chart-canvas-container {
+  position: relative;
+  height: 300px;
+  margin-bottom: 1rem;
+}
+
+.chart-reason {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+  border-left: 3px solid #667eea;
+  padding-left: 0.75rem;
+}
+
+.recommendations {
+  background: var(--bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1.5rem;
+}
+
+.recommendations-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #667eea;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.recommendations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendations-list li {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  border-left: 3px solid #667eea;
+}
+
+.recommendations-list li::before {
+  content: "💡 ";
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-canvas-container {
+    height: 250px;
+  }
+}
+</style>
+
+<script>
+  import Chart from 'chart.js/auto';
+
+  let currentCharts: Chart[] = [];
+  let currentData: any = null;
+
+  // Escuchar cuando se obtienen resultados SQL
+  window.addEventListener('sql-result', async (e: any) => {
+    const { sql, rows } = e.detail;
+    
+    if (!rows || rows.length === 0) {
+      hideChartsButton();
+      return;
+    }
+
+    // Guardar datos para generar gráficos cuando el usuario haga clic
+    currentData = { sql, rows };
+    showChartsButton();
+  });
+
+  function showChartsButton() {
+    const container = document.getElementById('chartsContainer');
+    if (container) {
+      container.style.display = 'block';
+    }
+  }
+
+  function hideChartsButton() {
+    const container = document.getElementById('chartsContainer');
+    if (container) {
+      container.style.display = 'none';
+    }
+  }
+
+  function showChartsPanel() {
+    const panel = document.getElementById('chartsPanel');
+    if (panel) {
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function hideChartsPanel() {
+    const panel = document.getElementById('chartsPanel');
+    if (panel) {
+      panel.style.display = 'none';
+    }
+    destroyCharts();
+  }
+
+  function destroyCharts() {
+    currentCharts.forEach(chart => chart.destroy());
+    currentCharts = [];
+  }
+
+  async function generateCharts() {
+    if (!currentData) return;
+
+    showChartsPanel();
+    
+    const content = document.getElementById('chartsContent');
+    if (!content) return;
+
+    content.innerHTML = '<div class="loading">Generando gráficos...</div>';
+
+    try {
+      const response = await fetch('/api/generateCharts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al generar gráficos');
+      }
+
+      const data = await response.json();
+      displayCharts(data);
+    } catch (err) {
+      console.error('Error generando gráficos:', err);
+      content.innerHTML = '<div class="loading">Error al generar gráficos. Por favor intenta de nuevo.</div>';
+    }
+  }
+
+  function displayCharts(data: any) {
+    const content = document.getElementById('chartsContent');
+    if (!content) return;
+
+    destroyCharts(); // Destruir gráficos anteriores
+
+    let html = '<div class="charts-grid">';
+
+    data.charts.forEach((chart: any, index: number) => {
+      html += `
+        <div class="chart-card">
+          <div class="chart-title">${chart.title}</div>
+          <div class="chart-description">${chart.description}</div>
+          <div class="chart-canvas-container">
+            <canvas id="chart-${index}"></canvas>
+          </div>
+          <div class="chart-reason">${chart.reason}</div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+
+    // Agregar recomendaciones si existen
+    if (data.recommendations && data.recommendations.length > 0) {
+      html += `
+        <div class="recommendations">
+          <div class="recommendations-title">Recomendaciones</div>
+          <ul class="recommendations-list">
+            ${data.recommendations.map((rec: string) => `<li>${rec}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    content.innerHTML = html;
+
+    // Crear los gráficos con Chart.js
+    data.charts.forEach((chart: any, index: number) => {
+      const canvas = document.getElementById(`chart-${index}`) as HTMLCanvasElement;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const newChart = new Chart(ctx, {
+            type: chart.type,
+            data: chart.chartData,
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: chart.type === 'pie' || chart.type === 'doughnut',
+                  position: 'bottom',
+                },
+                tooltip: {
+                  enabled: true,
+                },
+              },
+              scales: chart.type === 'bar' || chart.type === 'line' ? {
+                y: {
+                  beginAtZero: true,
+                },
+              } : undefined,
+            },
+          });
+          currentCharts.push(newChart);
+        }
+      }
+    });
+  }
+
+  // Event Listeners
+  document.addEventListener('DOMContentLoaded', () => {
+    const viewBtn = document.getElementById('viewChartsBtn');
+    const closeBtn = document.getElementById('closeCharts');
+
+    if (viewBtn) {
+      viewBtn.addEventListener('click', generateCharts);
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', hideChartsPanel);
+    }
+  });
+
+  // Ocultar gráficos cuando se ejecuta una nueva consulta
+  window.addEventListener('sql-run', () => {
+    hideChartsPanel();
+    hideChartsButton();
+    currentData = null;
+  });
+</script>
