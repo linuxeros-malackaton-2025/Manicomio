@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import type { APIRoute } from "astro";
 import dotenv from "dotenv";
 dotenv.config();
 
