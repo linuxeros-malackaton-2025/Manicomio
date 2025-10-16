@@ -2,22 +2,22 @@ import type { APIRoute } from 'astro';
 // @ts-ignore
 import oracledb from 'oracledb';
 
-export const GET: APIRoute = async () => {
+
+export const prerender = false;
+
+export const POST: APIRoute = async ({ request }) => {
   let connection;
 
   try {
-    // Inicializar cliente Oracle (solo si usas Thick mode)
-    // await oracledb.initOracleClient({ libDir: "/path/to/instant/client" });
-
     connection = await oracledb.getConnection({
-      user: process.env.ORACLE_USER || "ADMIN",
-      password: process.env.ORACLE_PASSWORD || "AshambOneCKhompSHAYR!ç1",
-      connectionString: process.env.ORACLE_CONNECT || "adb.eu-madrid-1.oraclecloud.com:1522/g2d0c285165a299_saluddatabase_high.adb.oraclecloud.com",
+      user: process.env.ORACLE_USER,
+      password: process.env.ORACLE_PASSWORD,
+      connectionString: process.env.ORACLE_CONNECTION_STRING,
     });
 
     console.log("Connected to Oracle Database");
 
-    const result = await connection.execute(`SELECT * FROM test`);
+    const result = await connection.execute(``);
 
     return new Response(JSON.stringify(result.rows), {
       headers: { 'Content-Type': 'application/json' },
