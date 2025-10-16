@@ -1,38 +1,45 @@
-import type { APIRoute } from 'astro';
+import type { APIRoute } from "astro";
 // @ts-ignore
-import oracledb from 'oracledb';
-
+import oracledb from "oracledb";
+import dotenv from "dotenv";
+dotenv.config();
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
-  let connection;
+  if (request.headers.get("Content-Type") === "application/json") {
+    const body = await request.json();
+    const sql = body.sql;
 
-  try {
-    connection = await oracledb.getConnection({
-      user: process.env.ORACLE_USER,
-      password: process.env.ORACLE_PASSWORD,
-      connectionString: process.env.ORACLE_CONNECTION_STRING,
-    });
+    let connection;
 
-    console.log("Connected to Oracle Database");
+    try {
+      connection = await oracledb.getConnection({
+        user: process.env.ORACLE_USER,
+        password: process.env.ORACLE_PASSWORD,
+        connectionString: process.env.ORACLE_CONNECTION_STRING,
+      });
 
-    const result = await connection.execute(``);
+      console.log("Connected to Oracle Database");
 
-    return new Response(JSON.stringify(result.rows), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (err: any) {
-    console.error("Error connecting to Oracle Database:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error("Error closing connection:", err);
+      const result = await connection.execute(sql);
+
+      return new Response(JSON.stringify(result.rows), {
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err: any) {
+      console.error("Error connecting to Oracle Database:", err);
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+      });
+    } finally {
+      if (connection) {
+        try {
+          await connection.close();
+        } catch (err) {
+          console.error("Error closing connection:", err);
+        }
       }
     }
   }
 };
-
