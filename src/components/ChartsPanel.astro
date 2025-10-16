@@ -2,16 +2,10 @@
 /*
   Componente ChartsPanel.astro
   - Muestra gráficos interactivos generados a partir de los datos
-  - Se activa con botón "Ver Gráficos"
+  - Se activa con evento 'request-charts'
   - Usa Chart.js para visualización
 */
 ---
-
-<div id="chartsContainer" style="display: none;">
-  <button id="viewChartsBtn" class="charts-btn">
-    📊 Ver Gráficos
-  </button>
-</div>
 
 <div id="chartsPanel" class="charts-panel" style="display: none;">
   <div class="charts-header">
@@ -25,33 +19,6 @@
 </div>
 
 <style>
-#chartsContainer {
-  margin-top: 1rem;
-  text-align: center;
-}
-
-.charts-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
-
-.charts-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-}
-
-.charts-btn:active {
-  transform: translateY(0);
-}
-
 .charts-panel {
   background: var(--bg-secondary);
   padding: 1.5rem;
@@ -204,28 +171,19 @@
     const { sql, rows } = e.detail;
     
     if (!rows || rows.length === 0) {
-      hideChartsButton();
       return;
     }
 
     // Guardar datos para generar gráficos cuando el usuario haga clic
     currentData = { sql, rows };
-    showChartsButton();
   });
 
-  function showChartsButton() {
-    const container = document.getElementById('chartsContainer');
-    if (container) {
-      container.style.display = 'block';
+  // Escuchar solicitud de gráficos desde ActionsPanel
+  window.addEventListener('request-charts', () => {
+    if (currentData) {
+      generateCharts();
     }
-  }
-
-  function hideChartsButton() {
-    const container = document.getElementById('chartsContainer');
-    if (container) {
-      container.style.display = 'none';
-    }
-  }
+  });
 
   function showChartsPanel() {
     const panel = document.getElementById('chartsPanel');
@@ -350,12 +308,7 @@
 
   // Event Listeners
   document.addEventListener('DOMContentLoaded', () => {
-    const viewBtn = document.getElementById('viewChartsBtn');
     const closeBtn = document.getElementById('closeCharts');
-
-    if (viewBtn) {
-      viewBtn.addEventListener('click', generateCharts);
-    }
 
     if (closeBtn) {
       closeBtn.addEventListener('click', hideChartsPanel);
@@ -365,7 +318,6 @@
   // Ocultar gráficos cuando se ejecuta una nueva consulta
   window.addEventListener('sql-run', () => {
     hideChartsPanel();
-    hideChartsButton();
     currentData = null;
   });
 </script>

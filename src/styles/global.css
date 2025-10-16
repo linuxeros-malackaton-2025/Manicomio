@@ -1,6 +1,9 @@
 :root {
   --bg:#0f1724;
+  --bg-secondary:#1a2332;
+  --bg-alt:#151f2e;
   --card:#0b1220;
+  --border:#2d3748;
   --muted:#94a3b8;
   --accent:#7c3aed;
   --accent-2:#06b6d4;
@@ -8,27 +11,18 @@
   color-scheme: dark;
 }
 
-[data-theme="light"] {
-  --bg:#f5f7fa;
-  --card:#ffffff;
-  --muted:#475569;
-  --text:#0f172a;
-  color-scheme: light;
-}
-
 body {
   margin:0;
   background:var(--bg);
   color:var(--text);
   font-family: Inter, system-ui, sans-serif;
-  transition: background 0.3s, color 0.3s;
   padding: 2rem;
 }
 
 .app-header {
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  gap: 1rem;
   margin-bottom:2rem;
 }
 
@@ -41,4 +35,5 @@ body {
   align-items:center;
   justify-content:center;
   font-weight:700;
+  flex-shrink: 0;
 }

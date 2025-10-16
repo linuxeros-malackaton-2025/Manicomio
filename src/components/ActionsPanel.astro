@@ -1,0 +1,140 @@
+---
+/*
+  Componente ActionsPanel.astro
+  - Contenedor para botones de acciones después de consultas
+  - Botones de Ver Gráficos y Ver Análisis Avanzado
+*/
+import ChartsPanel from "./ChartsPanel.astro";
+import AnalysisPanel from "./AnalysisPanel.astro";
+---
+
+<div id="actionsPanel" class="actions-panel" style="display: none;">
+  <div class="actions-buttons">
+    <button id="viewChartsBtn" class="action-btn charts-btn">
+      📊 Ver Gráficos
+    </button>
+    <button id="viewAnalysisBtn" class="action-btn analysis-btn">
+      🧠 Ver Análisis Avanzado
+    </button>
+  </div>
+</div>
+
+<ChartsPanel />
+<AnalysisPanel />
+
+<style>
+.actions-panel {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.actions-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 200px;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+}
+
+.action-btn:active {
+  transform: translateY(0);
+}
+
+.charts-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.charts-btn:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.analysis-btn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+}
+
+.analysis-btn:hover {
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.6);
+}
+
+@media (max-width: 600px) {
+  .actions-buttons {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 100%;
+  }
+}
+</style>
+
+<script is:inline>
+  // Mostrar panel de acciones cuando hay resultados
+  window.addEventListener('sql-result', (e) => {
+    const { rows } = e.detail;
+    
+    if (!rows || rows.length === 0) {
+      hideActionsPanel();
+      return;
+    }
+
+    showActionsPanel();
+  });
+
+  // Ocultar cuando se ejecuta nueva consulta
+  window.addEventListener('sql-run', () => {
+    hideActionsPanel();
+  });
+
+  function showActionsPanel() {
+    const panel = document.getElementById('actionsPanel');
+    if (panel) {
+      panel.style.display = 'block';
+    }
+  }
+
+  function hideActionsPanel() {
+    const panel = document.getElementById('actionsPanel');
+    if (panel) {
+      panel.style.display = 'none';
+    }
+  }
+
+  // Los botones disparan eventos personalizados que son escuchados por ChartsPanel y AnalysisPanel
+  document.addEventListener('DOMContentLoaded', () => {
+    const chartsBtn = document.getElementById('viewChartsBtn');
+    const analysisBtn = document.getElementById('viewAnalysisBtn');
+
+    if (chartsBtn) {
+      chartsBtn.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('request-charts'));
+      });
+    }
+
+    if (analysisBtn) {
+      analysisBtn.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('request-analysis'));
+      });
+    }
+  });
+</script>

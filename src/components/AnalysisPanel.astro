@@ -4,12 +4,13 @@
   - Muestra análisis avanzado de los resultados
   - Insights generados por IA
   - Estadísticas y recomendaciones
+  - Se activa con evento 'request-analysis'
 */
 ---
 
 <div class="analysis-panel" id="analysisPanel" style="display: none;">
   <div class="analysis-header">
-    <h3>📊 Análisis Avanzado</h3>
+    <h3>🧠 Análisis Avanzado</h3>
     <button id="closeAnalysis" class="close-btn">✕</button>
   </div>
   
@@ -24,7 +25,7 @@
   padding: 1.5rem;
   border-radius: 12px;
   margin-top: 1rem;
-  border: 2px solid var(--accent);
+  border: 2px solid #06b6d4;
 }
 
 .analysis-header {
@@ -178,15 +179,35 @@
     const { sql, rows } = e.detail;
     
     if (!rows || rows.length === 0) {
-      return; // No analizar si no hay datos
+      return;
     }
 
-    // Llamar al endpoint de análisis avanzado
+    // Guardar datos para generar análisis cuando el usuario haga clic
+    currentAnalysisData = { sql, rows };
+  });
+
+  // Escuchar solicitud de análisis desde ActionsPanel
+  window.addEventListener('request-analysis', () => {
+    if (currentAnalysisData) {
+      generateAnalysis();
+    }
+  });
+
+  async function generateAnalysis() {
+    if (!currentAnalysisData) return;
+
+    showPanel();
+    
+    const content = document.getElementById('analysisContent');
+    if (!content) return;
+
+    content.innerHTML = '<div class="loading">Analizando datos...</div>';
+
     try {
       const response = await fetch('/api/analyzeData', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sql, rows })
+        body: JSON.stringify(currentAnalysisData)
       });
 
       if (!response.ok) {
@@ -194,14 +215,12 @@
       }
 
       const analysis = await response.json();
-      currentAnalysisData = analysis;
-      
       displayAnalysis(analysis);
-      showPanel();
     } catch (err) {
       console.error('Error en análisis avanzado:', err);
+      content.innerHTML = '<div class="loading">Error al generar análisis. Por favor intenta de nuevo.</div>';
     }
-  });
+  }
 
   function displayAnalysis(analysis) {
     const content = document.getElementById('analysisContent');
@@ -305,6 +324,7 @@
   // Botón de cerrar
   document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.getElementById('closeAnalysis');
+
     if (closeBtn) {
       closeBtn.addEventListener('click', hidePanel);
     }
@@ -313,5 +333,6 @@
   // Ocultar panel cuando se ejecuta una nueva consulta
   window.addEventListener('sql-run', () => {
     hidePanel();
+    currentAnalysisData = null;
   });
 </script>
