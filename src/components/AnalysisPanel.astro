@@ -1,0 +1,317 @@
+---
+/*
+  Componente AnalysisPanel.astro
+  - Muestra análisis avanzado de los resultados
+  - Insights generados por IA
+  - Estadísticas y recomendaciones
+*/
+---
+
+<div class="analysis-panel" id="analysisPanel" style="display: none;">
+  <div class="analysis-header">
+    <h3>📊 Análisis Avanzado</h3>
+    <button id="closeAnalysis" class="close-btn">✕</button>
+  </div>
+  
+  <div id="analysisContent" class="analysis-content">
+    <div class="loading">Analizando datos...</div>
+  </div>
+</div>
+
+<style>
+.analysis-panel {
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+  border: 2px solid var(--accent);
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.analysis-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--bg-alt);
+  color: var(--text);
+}
+
+.analysis-content {
+  color: var(--text);
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary {
+  background: var(--bg);
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.insights-list,
+.recommendations-list,
+.anomalies-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.insights-list li,
+.recommendations-list li,
+.anomalies-list li {
+  background: var(--bg);
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  border-left: 3px solid var(--accent);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.insights-list li::before {
+  content: "💡 ";
+  margin-right: 0.5rem;
+}
+
+.recommendations-list li::before {
+  content: "📌 ";
+  margin-right: 0.5rem;
+}
+
+.anomalies-list li {
+  border-left-color: #ff6b6b;
+}
+
+.anomalies-list li::before {
+  content: "⚠️ ";
+  margin-right: 0.5rem;
+}
+
+.statistics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.stat-card {
+  background: var(--bg);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  display: block;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.timestamp {
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 1rem;
+  font-style: italic;
+}
+</style>
+
+<script is:inline>
+  let currentAnalysisData = null;
+
+  // Escuchar cuando se obtienen resultados SQL
+  window.addEventListener('sql-result', async (e) => {
+    const { sql, rows } = e.detail;
+    
+    if (!rows || rows.length === 0) {
+      return; // No analizar si no hay datos
+    }
+
+    // Llamar al endpoint de análisis avanzado
+    try {
+      const response = await fetch('/api/analyzeData', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql, rows })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al obtener análisis');
+      }
+
+      const analysis = await response.json();
+      currentAnalysisData = analysis;
+      
+      displayAnalysis(analysis);
+      showPanel();
+    } catch (err) {
+      console.error('Error en análisis avanzado:', err);
+    }
+  });
+
+  function displayAnalysis(analysis) {
+    const content = document.getElementById('analysisContent');
+    if (!content) return;
+
+    let html = '';
+
+    // Resumen ejecutivo
+    if (analysis.summary) {
+      html += `
+        <div class="section">
+          <div class="summary">${analysis.summary}</div>
+        </div>
+      `;
+    }
+
+    // Estadísticas
+    if (analysis.statistics) {
+      const stats = analysis.statistics;
+      html += `
+        <div class="section">
+          <div class="section-title">Estadísticas</div>
+          <div class="statistics">
+            <div class="stat-card">
+              <span class="stat-value">${stats.totalRows}</span>
+              <span class="stat-label">Registros</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">${stats.columns?.length || 0}</span>
+              <span class="stat-label">Columnas</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Insights
+    if (analysis.insights && analysis.insights.length > 0) {
+      html += `
+        <div class="section">
+          <div class="section-title">Insights Clave</div>
+          <ul class="insights-list">
+            ${analysis.insights.map(insight => `<li>${insight}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    // Anomalías
+    if (analysis.anomalies && analysis.anomalies.length > 0) {
+      html += `
+        <div class="section">
+          <div class="section-title">Anomalías Detectadas</div>
+          <ul class="anomalies-list">
+            ${analysis.anomalies.map(anomaly => `<li>${anomaly}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    // Recomendaciones
+    if (analysis.recommendations && analysis.recommendations.length > 0) {
+      html += `
+        <div class="section">
+          <div class="section-title">Recomendaciones</div>
+          <ul class="recommendations-list">
+            ${analysis.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    // Timestamp
+    if (analysis.timestamp) {
+      const date = new Date(analysis.timestamp);
+      html += `
+        <div class="timestamp">
+          Análisis generado: ${date.toLocaleString('es-ES')}
+        </div>
+      `;
+    }
+
+    content.innerHTML = html;
+  }
+
+  function showPanel() {
+    const panel = document.getElementById('analysisPanel');
+    if (panel) {
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function hidePanel() {
+    const panel = document.getElementById('analysisPanel');
+    if (panel) {
+      panel.style.display = 'none';
+    }
+  }
+
+  // Botón de cerrar
+  document.addEventListener('DOMContentLoaded', () => {
+    const closeBtn = document.getElementById('closeAnalysis');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', hidePanel);
+    }
+  });
+
+  // Ocultar panel cuando se ejecuta una nueva consulta
+  window.addEventListener('sql-run', () => {
+    hidePanel();
+  });
+</script>
