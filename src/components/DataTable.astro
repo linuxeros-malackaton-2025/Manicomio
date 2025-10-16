@@ -1,6 +1,107 @@
+---
+/*
+  Componente DataTable.astro
+  - Muestra resultados de consultas SQL en una tabla
+  - Escucha eventos 'sql-result' y 'sql-error'
+*/
+---
+
+<div class="data-table-panel">
+  <h3 id="queryTitle">Resultados</h3>
+  <p id="queryAnalysis" class="sql-display"></p>
+  
+  <div id="placeholder" class="placeholder">
+    Ejecuta una consulta para ver los resultados
+  </div>
+  
+  <table id="dataTable" style="display: none;">
+    <thead>
+      <tr id="tableHeadRow"></tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<style>
+.data-table-panel {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.sql-display {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--bg);
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.placeholder {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+thead {
+  background: var(--accent);
+  color: white;
+}
+
+th, td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr:hover {
+  background: var(--bg-alt);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+</style>
+
 <script is:inline>
-  window.addEventListener('sql-run', async (e) => {
+  // Mostrar estado de carga
+  window.addEventListener('sql-run', (e) => {
+    const placeholder = document.getElementById('placeholder');
+    const dataTable = document.getElementById('dataTable');
+    const analysis = document.getElementById('queryAnalysis');
+
+    if (!placeholder || !dataTable || !analysis) return;
+
+    placeholder.textContent = 'Consultando Oracle...';
+    placeholder.style.display = 'block';
+    dataTable.style.display = 'none';
+    analysis.textContent = '';
+  });
+
+  // Procesar resultados exitosos
+  window.addEventListener('sql-result', (e) => {
     const sql = e.detail?.sql ?? '';
+    const rows = e.detail?.rows ?? [];
+    
     const title = document.getElementById('queryTitle');
     const analysis = document.getElementById('queryAnalysis');
     const placeholder = document.getElementById('placeholder');
@@ -10,57 +111,42 @@
 
     if (!placeholder || !dataTable || !head || !body || !title || !analysis) return;
 
-    // Mostrar estado de carga
-    placeholder.textContent = 'Consultando Oracle...';
-    placeholder.style.display = 'block';
-    dataTable.style.display = 'none';
-    analysis.textContent = '';
+    // Actualizar título
+    title.textContent = `Resultados: ${rows.length} registro(s)`;
+    analysis.textContent = sql;
 
-    try {
-      // Llamada REAL a Oracle
-      const response = await fetch('/api/queryDB', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sql })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Error en la consulta');
-      }
-
-      const data = result.rows;
-
-      // Actualizar título
-      title.textContent = `Resultados: ${data.length} registro(s)`;
-      analysis.textContent = sql;
-
-      if (data.length === 0) {
-        placeholder.textContent = 'La consulta no devolvió resultados';
-        placeholder.style.display = 'block';
-        dataTable.style.display = 'none';
-        return;
-      }
-
-      // Construir tabla
-      head.innerHTML = Object.keys(data[0])
-        .map(c => `<th>${c}</th>`)
-        .join('');
-
-      body.innerHTML = data
-        .map(row => `<tr>${Object.values(row)
-          .map(v => `<td>${v ?? 'NULL'}</td>`)
-          .join('')}</tr>`)
-        .join('');
-
-      placeholder.style.display = 'none';
-      dataTable.style.display = 'table';
-
-    } catch (err) {
-      placeholder.textContent = `Error: ${err.message}`;
+    if (rows.length === 0) {
+      placeholder.textContent = 'La consulta no devolvió resultados';
       placeholder.style.display = 'block';
       dataTable.style.display = 'none';
+      return;
     }
+
+    // Construir tabla
+    head.innerHTML = Object.keys(rows[0])
+      .map(c => `<th>${c}</th>`)
+      .join('');
+
+    body.innerHTML = rows
+      .map(row => `<tr>${Object.values(row)
+        .map(v => `<td>${v ?? 'NULL'}</td>`)
+        .join('')}</tr>`)
+      .join('');
+
+    placeholder.style.display = 'none';
+    dataTable.style.display = 'table';
+  });
+
+  // Procesar errores
+  window.addEventListener('sql-error', (e) => {
+    const message = e.detail?.message ?? 'Error desconocido';
+    const placeholder = document.getElementById('placeholder');
+    const dataTable = document.getElementById('dataTable');
+
+    if (!placeholder || !dataTable) return;
+
+    placeholder.textContent = `Error: ${message}`;
+    placeholder.style.display = 'block';
+    dataTable.style.display = 'none';
   });
 </script>
