@@ -17,8 +17,8 @@
     analysis.textContent = '';
 
     try {
-      // 🔥 Llamada REAL a Oracle
-      const response = await fetch('/api/query', {
+      // Llamada REAL a Oracle
+      const response = await fetch('/api/queryDB', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sql })
@@ -58,7 +58,7 @@
       dataTable.style.display = 'table';
 
     } catch (err) {
-      placeholder.textContent = `❌ Error: ${err.message}`;
+      placeholder.textContent = `Error: ${err.message}`;
       placeholder.style.display = 'block';
       dataTable.style.display = 'none';
     }

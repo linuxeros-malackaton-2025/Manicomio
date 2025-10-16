@@ -92,11 +92,46 @@ pre.sql-highlight {
     // Input en textarea actualiza resaltado
     sqlArea.addEventListener('input', updateHighlight);
 
-    // Ejecutar SQL: dispara evento al resto de la app
-    runBtn.addEventListener('click', () => {
+    // Ejecutar SQL: dispara evento y llama al backend
+    runBtn.addEventListener('click', async () => {
       const sql = sqlArea.value.trim();
       if (!sql) return;
+
+      // Emitir evento local inmediato (otros componentes pueden reaccionar)
       window.dispatchEvent(new CustomEvent('sql-run', { detail: { sql } }));
+
+      // Estado de carga en el botón
+      const originalText = runBtn.textContent;
+      runBtn.disabled = true;
+      runBtn.textContent = 'Ejecutando...';
+
+      try {
+        const resp = await fetch('/api/queryDB', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql })
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          const message = (data && data.error) ? data.error : 'Error en la consulta';
+          throw new Error(message);
+        }
+
+        // Soportar tanto respuesta directa (array) como { rows: [...] }
+        const rows = Array.isArray(data) ? data : (data && data.rows) ? data.rows : [];
+
+        // Emitir resultado para toda la app
+        window.dispatchEvent(new CustomEvent('sql-result', { detail: { sql, rows } }));
+      } catch (err) {
+        const message = err?.message ?? String(err);
+        window.dispatchEvent(new CustomEvent('sql-error', { detail: { sql, message } }));
+        console.error('Error fetch /api/queryDB:', message);
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = originalText;
+      }
     });
 
     // Limpiar textarea

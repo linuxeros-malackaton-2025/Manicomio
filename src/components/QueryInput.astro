@@ -8,7 +8,7 @@
 
 <div class="panel">
   <label>Consulta en lenguaje natural</label>
-  <input id="nl" type="text" placeholder="Ej: Muéstrame ventas con precio > 100" />
+  <input id="nl" type="text" placeholder="Ej: Pacientes de Andalucía" />
   <div class="buttons">
     <button id="convertBtn">Convertir (LLM mock)</button>
     <button id="clearBtn" class="secondary">Limpiar</button>
@@ -68,18 +68,60 @@ button.secondary {
 
     if (!nlInput || !convertBtn || !clearBtn) return;
 
-    // Convertir lenguaje natural a SQL (mock)
-    convertBtn.addEventListener('click', () => {
+    convertBtn.addEventListener('click', async () => {
       const nl = nlInput.value.trim();
       if (!nl) return;
-      
-      // Mock: generar SQL simple basado en palabras clave
-      const sql = nl.includes('ventas') 
-        ? 'SELECT * FROM ventas WHERE precio > 100;' 
-        : 'SELECT * FROM tabla;';
-      
-      // Disparar evento con el SQL generado
-      window.dispatchEvent(new CustomEvent('sql-generated', { detail: sql }));
+
+      convertBtn.disabled = true;
+      const originalText = convertBtn.textContent;
+      convertBtn.textContent = 'Convirtiendo...';
+
+      try {
+        // 1) Pedir al backend que convierta NL -> SQL
+        const genResp = await fetch('/api/generateQueryFromNL', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({query: nl })
+        });
+        const genData = await genResp.json();
+        if (!genResp.ok) {
+          throw new Error(genData?.error || 'Error al generar SQL');
+        }
+
+        const sql = genData?.sql;
+        if (!sql) {
+          throw new Error('El servidor no devolvió SQL');
+        }
+
+        // Emitir SQL generado para que otros componentes (ej. editor) lo muestren
+        window.dispatchEvent(new CustomEvent('sql-generated', { detail: sql }));
+
+        // 2) Ejecutar el SQL generado en el endpoint que consulta la BD
+        convertBtn.textContent = 'Consultando...';
+        const resp = await fetch('/api/queryDB', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql })
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(data?.error || 'Error en la consulta SQL');
+        }
+
+        // Soportar formato { rows: [...] } o un array directo
+        const rows = Array.isArray(data) ? data : (data && data.rows) ? data.rows : [];
+
+        // Emitir resultado para la app
+        window.dispatchEvent(new CustomEvent('sql-result', { detail: { nl, sql, rows } }));
+      } catch (err) {
+        const message = err?.message ?? String(err);
+        window.dispatchEvent(new CustomEvent('sql-error', { detail: { nl, message } }));
+        console.error('Error conversión/consulta:', message);
+      } finally {
+        convertBtn.disabled = false;
+        convertBtn.textContent = originalText;
+      }
     });
 
     // Limpiar input
